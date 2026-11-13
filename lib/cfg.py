@@ -1,4 +1,5 @@
 """Find and read a project's .house-style.json (opt-in marker). Stdlib only."""
+
 import json
 from pathlib import Path
 

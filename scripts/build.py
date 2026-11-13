@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """Emit house-style tokens for a project.
-  build.py --accent green --out DIR [--tailwind 3|4]   -> DIR/house-style.css (+ house-style.preset.js for tailwind 3)
-  build.py --check                                      -> validate contrast of every accent (exit 1 on failure)"""
+build.py --accent green --out DIR [--tailwind 3|4]   -> DIR/house-style.css (+ house-style.preset.js for tailwind 3)
+build.py --check                                      -> validate contrast of every accent (exit 1 on failure)"""
+
 import argparse
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
-import tokens  # noqa: E402
+import tokens
 
 
 def main():
@@ -27,9 +28,9 @@ def main():
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     (out / "house-style.css").write_text(tokens.css(a.accent, a.tailwind))
-    if a.tailwind == 3:
+    if a.tailwind == tokens.TAILWIND_3:
         (out / "house-style.preset.js").write_text(tokens.preset())
-    print(f"wrote {out}/house-style.css" + (f" and house-style.preset.js" if a.tailwind == 3 else ""))
+    print(f"wrote {out}/house-style.css" + (" and house-style.preset.js" if a.tailwind == tokens.TAILWIND_3 else ""))
     return 0
 
 

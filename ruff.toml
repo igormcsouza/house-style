@@ -1,0 +1,12 @@
+# house-style's own lint config: the standard (templates/python/ruff.toml) plus the exceptions a CLI/hook tool legitimately needs.
+extend = "templates/python/ruff.toml"
+extend-exclude = ["templates"]  # templates are separate projects, linted and tested in their own CI jobs
+
+[lint.per-file-ignores]
+"scripts/**" = ["T201", "S603", "S607", "S310", "E501"]   # CLIs print and run git/uv/ImageMagick with fixed argument lists
+"hooks/**" = ["T201", "BLE001", "E501"]                   # hooks print their output and must fail open on any error
+"lib/hygiene.py" = ["S607", "E501"]                       # `git tag --list`
+"lib/tokens.py" = ["PLR2004", "E501"]                      # sRGB/HSL color-space constants
+"lib/checks.py" = ["E501"]
+"lib/project.py" = ["E501"]                        # rule messages and regexes read better unwrapped
+"tests/**" = ["S", "PLR2004", "PLR0913", "ASYNC", "E501"]

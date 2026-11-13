@@ -16,6 +16,12 @@ Backend
 - FastAPI domain packages (models/exceptions/repositories/services/controllers), env-only config, uv + ruff, 100% test coverage, errors as RFC 9457 problem+json, JSON logs, /healthz.
 - MCP: standalone `fastmcp` (`from fastmcp import FastMCP`) + OAuth with auto-discovery (RemoteAuthProvider/OAuthProxy). No hand-rolled .well-known routes.
 
+Project standards (rules/python.md, infra.md, testing.md, security.md)
+- Python: uv only (uv.lock, no requirements.txt/Poetry/pip), pytest with 100% coverage enforced, never unittest.TestCase, ruff (templates/python/ruff.toml). Web: vitest with coverage thresholds at 100.
+- AWS = CDK in Python only. App runs with `docker compose up`. Every project owns a FIXED port block (scripts/ports.py, range 10000-32759); never the popular defaults (3000, 5000, 8000, 4566, 5432, 8080...). CHANGING an existing project's ports can break sign-in (registered callback/logout URLs, CORS, base URLs): review login first (rules/infra.md) and get the user's OK before redeploying.
+- Frontend + backend + infra => Playwright e2e on desktop AND mobile viewport with axe scans, against the compose stack.
+- Security: no hard-coded secrets, no CORS `*`, no eval/shell=True/string SQL/pickle, JWT fully validated, problem+json errors. Mobile-first UI, test at 375px.
+
 Docs and releases (rules/docs.md, rules/releasing.md)
 - README: icon + H1 + one bold sentence, badges (max 5), Why, Install/Quickstart (tested commands), Usage table, How it works, Docs/Contributing/License. No emoji in headings. <= 200 lines, depth goes to docs/ (mkdocs-material).
 - AGENTS.md: Layout, Commands, Conventions, Hard stops, Gotchas; <= 150 lines, only what code cannot say. CLAUDE.md is just `@AGENTS.md`. CONTRIBUTING.md + CHANGELOG.md (Keep a Changelog) + LICENSE (MIT).

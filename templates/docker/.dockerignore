@@ -1,0 +1,10 @@
+node_modules
+.next
+.venv
+.git
+.env
+__pycache__
+coverage
+playwright-report
+test-results
+cdk.out

@@ -2,9 +2,9 @@
 """Plan or prepare a release from Conventional Commits. Never pushes, never tags.
   release.py [auto|patch|minor|major] [--apply] [--pre rc] [--notes-out FILE]
 Dry run by default. --apply bumps version files, prepends CHANGELOG.md, commits `release: vX.Y.Z` on branch release/vX.Y.Z."""
+
 import argparse
 import datetime
-import json
 import re
 import subprocess
 import sys
@@ -12,7 +12,12 @@ from pathlib import Path
 
 TAG_RE = r"v[0-9]+\.[0-9]+\.[0-9]+"
 CONV = re.compile(r"^(\w+)(\([^)]*\))?(!)?:\s*(.+)$")
-SECTIONS = (("Breaking changes", None), ("Added", {"feat"}), ("Changed", {"refactor", "perf", "revert"}), ("Fixed", {"fix"}))
+SECTIONS = (
+    ("Breaking changes", None),
+    ("Added", {"feat"}),
+    ("Changed", {"refactor", "perf", "revert"}),
+    ("Fixed", {"fix"}),
+)
 SKIP_DIRS = {"node_modules", ".venv", "venv", ".git", "dist", "build", ".next", "site", "worktrees", "cdk.out"}
 
 
@@ -24,7 +29,9 @@ def git(*args, cwd="."):
 
 
 def last_tag(cwd):
-    r = subprocess.run(["git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*"], cwd=cwd, capture_output=True, text=True)
+    r = subprocess.run(
+        ["git", "describe", "--tags", "--abbrev=0", "--match", "v[0-9]*"], cwd=cwd, capture_output=True, text=True
+    )
     return r.stdout.strip() or None
 
 
@@ -38,7 +45,14 @@ def commits(cwd, since):
             continue
         typ, _, bang, text = m.groups()
         brk = re.search(r"BREAKING[ -]CHANGE:\s*(.+)", body)
-        out.append({"type": typ, "breaking": bool(bang or brk), "text": text.strip(), "migration": brk.group(1).strip() if brk else None})
+        out.append(
+            {
+                "type": typ,
+                "breaking": bool(bang or brk),
+                "text": text.strip(),
+                "migration": brk.group(1).strip() if brk else None,
+            }
+        )
     return out
 
 
@@ -49,7 +63,13 @@ def bump(cur, kind, cs):
         releasable = [c for c in cs if c["breaking"] or c["type"] in {"feat", "fix", "perf", "refactor", "revert"}]
         if not releasable:
             return None
-        kind = "major" if brk and major >= 1 else "minor" if brk or (major >= 1 and any(c["type"] == "feat" for c in cs)) else "patch"
+        kind = (
+            "major"
+            if brk and major >= 1
+            else "minor"
+            if brk or (major >= 1 and any(c["type"] == "feat" for c in cs))
+            else "patch"
+        )
     if kind == "major":
         return f"{major + 1}.0.0"
     return f"{major}.{minor + 1}.0" if kind == "minor" else f"{major}.{minor}.{patch + 1}"
@@ -59,7 +79,11 @@ def notes(cs):
     out = []
     for title, types in SECTIONS:
         if types is None:
-            items = [f"- {c['text']}" + (f"\n  Migration: {c['migration']}" if c["migration"] else "") for c in cs if c["breaking"]]
+            items = [
+                f"- {c['text']}" + (f"\n  Migration: {c['migration']}" if c["migration"] else "")
+                for c in cs
+                if c["breaking"]
+            ]
         else:
             items = [f"- {c['text']}" for c in cs if c["type"] in types and not c["breaking"]]
         if items:
@@ -70,15 +94,23 @@ def notes(cs):
 def version_files(root):
     """(path, regex with groups (before, version, after)) for every version source found."""
     spec = []
-    for rel, rx in (("pyproject.toml", r'(?ms)(^\[project\].*?^version\s*=\s*")([^"]+)(")'),
-                    ("package.json", r'(?m)(^\s*"version"\s*:\s*")([^"]+)(")'),
-                    ("app.json", r'(?ms)("expo"\s*:\s*\{.*?"version"\s*:\s*")([^"]+)(")'),
-                    (".claude-plugin/plugin.json", r'(?m)(^\s*"version"\s*:\s*")([^"]+)(")')):
-        if (root / rel).is_file():
-            spec.append((root / rel, rx))
-    for f in list(root.glob("*/__init__.py")) + list(root.glob("*/*/__init__.py")) + list(root.glob("src/*/__init__.py")):
-        if not SKIP_DIRS & set(f.relative_to(root).parts) and "__version__" in f.read_text(errors="ignore"):
-            spec.append((f, r"""(__version__\s*=\s*['"])([^'"]+)(['"])"""))
+    for rel, rx in (
+        ("pyproject.toml", r'(?ms)(^\[project\].*?^version\s*=\s*")([^"]+)(")'),
+        ("package.json", r'(?m)(^\s*"version"\s*:\s*")([^"]+)(")'),
+        ("app.json", r'(?ms)("expo"\s*:\s*\{.*?"version"\s*:\s*")([^"]+)(")'),
+        (".claude-plugin/plugin.json", r'(?m)(^\s*"version"\s*:\s*")([^"]+)(")'),
+    ):
+        f = root / rel
+        if f.is_file() and not (
+            rel == "pyproject.toml" and re.search(r"(?m)^package\s*=\s*false", f.read_text())
+        ):  # non-packaged dev project: no version
+            spec.append((f, rx))
+    inits = list(root.glob("*/__init__.py")) + list(root.glob("*/*/__init__.py")) + list(root.glob("src/*/__init__.py"))
+    spec += [
+        (f, r"""(__version__\s*=\s*['"])([^'"]+)(['"])""")
+        for f in inits
+        if not SKIP_DIRS & set(f.relative_to(root).parts) and "__version__" in f.read_text(errors="ignore")
+    ]
     found = []
     for f, rx in spec:
         m = re.search(rx, f.read_text())
@@ -112,7 +144,11 @@ def main():
         nxt = base if base != "0.0.0" else "0.1.0"
     full = nxt + (f"-{a.pre}.1" if a.pre else "")
     body = notes(cs)
-    print(f"last tag: {tag or '(none)'}  ->  v{full}\nfiles: " + (", ".join(str(f.relative_to(root)) for f, _, _ in files) or "(none: version = git tag + CHANGELOG only)") + f"\n\n{body}\n")
+    print(
+        f"last tag: {tag or '(none)'}  ->  v{full}\nfiles: "
+        + (", ".join(str(f.relative_to(root)) for f, _, _ in files) or "(none: version = git tag + CHANGELOG only)")
+        + f"\n\n{body}\n"
+    )
     if a.notes_out:
         Path(a.notes_out).write_text(body + "\n")
     if not a.apply:
@@ -129,11 +165,16 @@ def main():
     text = log.read_text() if log.is_file() else head
     entry = f"## [{full}] - {datetime.date.today().isoformat()}\n\n{body}\n\n"
     i = text.find("\n## [")
-    log.write_text(text[:i + 1] + entry + text[i + 1:] if i >= 0 else text.rstrip("\n") + "\n\n" + entry.rstrip("\n") + "\n")
+    log.write_text(
+        text[: i + 1] + entry + text[i + 1 :] if i >= 0 else text.rstrip("\n") + "\n\n" + entry.rstrip("\n") + "\n"
+    )
     git("add", "-A", cwd=root)
     git("commit", "-m", f"release: v{full}", cwd=root)
-    print(f"committed release: v{full}. Next (needs user OK): push branch, open PR, merge, then\n"
-          f"  gh release create v{full} --target main --title v{full} --notes-file <notes>" + (" --prerelease" if a.pre else ""))
+    print(
+        f"committed release: v{full}. Next (needs user OK): push branch, open PR, merge, then\n"
+        f"  gh release create v{full} --target main --title v{full} --notes-file <notes>"
+        + (" --prerelease" if a.pre else "")
+    )
     print("Also refresh lockfiles if the project has them (uv lock / npm install --package-lock-only) before merging.")
     return 0
 

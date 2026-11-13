@@ -2,26 +2,36 @@
 
 # Neutrals are shadcn "zinc" (what the existing projects already use), as "H S% L%" triplets.
 LIGHT = {
-    "background": "0 0% 100%", "foreground": "240 10% 3.9%",
-    "card": "0 0% 100%", "popover": "0 0% 100%",
-    "secondary": "240 4.8% 95.9%", "muted": "240 4.8% 95.9%", "accent": "240 4.8% 95.9%",
+    "background": "0 0% 100%",
+    "foreground": "240 10% 3.9%",
+    "card": "0 0% 100%",
+    "popover": "0 0% 100%",
+    "secondary": "240 4.8% 95.9%",
+    "muted": "240 4.8% 95.9%",
+    "accent": "240 4.8% 95.9%",
     "muted-foreground": "240 3.8% 40%",
-    "border": "240 5.9% 90%",   # decorative dividers
-    "input": "240 4% 52%",      # control borders: >= 3:1 (WCAG 1.4.11)
-    "destructive": "0 72% 45%", "success": "142 72% 29%",
+    "border": "240 5.9% 90%",  # decorative dividers
+    "input": "240 4% 52%",  # control borders: >= 3:1 (WCAG 1.4.11)
+    "destructive": "0 72% 45%",
+    "success": "142 72% 29%",
 }
 DARK = {
-    "background": "240 10% 3.9%", "foreground": "0 0% 98%",
-    "card": "240 10% 3.9%", "popover": "240 10% 3.9%",
-    "secondary": "240 3.7% 15.9%", "muted": "240 3.7% 15.9%", "accent": "240 3.7% 15.9%",
+    "background": "240 10% 3.9%",
+    "foreground": "0 0% 98%",
+    "card": "240 10% 3.9%",
+    "popover": "240 10% 3.9%",
+    "secondary": "240 3.7% 15.9%",
+    "muted": "240 3.7% 15.9%",
+    "accent": "240 3.7% 15.9%",
     "muted-foreground": "240 5% 64.9%",
     "border": "240 3.7% 15.9%",
     "input": "240 4% 48%",
-    "destructive": "0 84% 68%", "success": "142 69% 58%",
+    "destructive": "0 84% 68%",
+    "success": "142 69% 58%",
 }
 # name -> (light fill, dark fill). Both are validated as text on background (4.5:1) and as button fill.
 ACCENTS = {
-    "green": ("#15803d", "#22c55e"),   # default
+    "green": ("#15803d", "#22c55e"),  # default
     "blue": ("#2563eb", "#60a5fa"),
     "red": ("#dc2626", "#f87171"),
     "violet": ("#7c3aed", "#a78bfa"),
@@ -30,41 +40,46 @@ ACCENTS = {
 }
 DEFAULT_ACCENT = "green"
 MATERIAL = {"green": "green", "blue": "blue", "red": "red", "violet": "deep purple", "amber": "amber", "teal": "teal"}
+TAILWIND_3, TAILWIND_4 = 3, 4
 RADIUS = "0.625rem"  # 10px
 
 
 def _hex_to_rgb(h):
     h = h.lstrip("#")
-    return tuple(int(h[i:i + 2], 16) / 255 for i in (0, 2, 4))
+    return tuple(int(h[i : i + 2], 16) / 255 for i in (0, 2, 4))
 
 
 def _hsl_to_rgb(triplet):
-    h, s, l = (float(x.rstrip("%")) for x in triplet.split())
-    h, s, l = h / 360, s / 100, l / 100
+    h, s, light = (float(x.rstrip("%")) for x in triplet.split())
+    h, s, light = h / 360, s / 100, light / 100
     if s == 0:
-        return (l, l, l)
-    q = l * (1 + s) if l < 0.5 else l + s - l * s
-    p = 2 * l - q
+        return (light, light, light)
+    q = light * (1 + s) if light < 0.5 else light + s - light * s
+    p = 2 * light - q
 
     def f(t):
         t %= 1
-        if t < 1 / 6: return p + (q - p) * 6 * t
-        if t < 1 / 2: return q
-        if t < 2 / 3: return p + (q - p) * (2 / 3 - t) * 6
+        if t < 1 / 6:
+            return p + (q - p) * 6 * t
+        if t < 1 / 2:
+            return q
+        if t < 2 / 3:
+            return p + (q - p) * (2 / 3 - t) * 6
         return p
+
     return (f(h + 1 / 3), f(h), f(h - 1 / 3))
 
 
 def hex_to_hsl(h):
     r, g, b = _hex_to_rgb(h)
     mx, mn = max(r, g, b), min(r, g, b)
-    l = (mx + mn) / 2
+    light = (mx + mn) / 2
     if mx == mn:
-        return f"0 0% {l * 100:.1f}%"
+        return f"0 0% {light * 100:.1f}%"
     d = mx - mn
-    s = d / (2 - mx - mn) if l > 0.5 else d / (mx + mn)
+    s = d / (2 - mx - mn) if light > 0.5 else d / (mx + mn)
     hue = {r: (g - b) / d + (6 if g < b else 0), g: (b - r) / d + 2, b: (r - g) / d + 4}[mx] * 60
-    return f"{hue:.0f} {s * 100:.0f}% {l * 100:.1f}%"
+    return f"{hue:.0f} {s * 100:.0f}% {light * 100:.1f}%"
 
 
 def luminance(rgb):
@@ -88,7 +103,9 @@ def scheme(base, accent_hex, dark_ink):
     t["primary"] = hex_to_hsl(accent_hex)
     t["ring"] = t["primary"]
     for k in ("primary", "destructive", "success", "secondary", "accent", "card", "popover"):
-        t[f"{k}-foreground"] = on_color(t[k], dark_ink) if k in ("primary", "destructive", "success") else t["foreground"]
+        t[f"{k}-foreground"] = (
+            on_color(t[k], dark_ink) if k in ("primary", "destructive", "success") else t["foreground"]
+        )
     return t
 
 
@@ -99,20 +116,28 @@ def schemes(accent):
     return scheme(LIGHT, lo, LIGHT["foreground"]), scheme(DARK, dk, DARK["background"])
 
 
+def _ratio(scheme_tokens, a, b):
+    return contrast(_hsl_to_rgb(scheme_tokens[a]), _hsl_to_rgb(scheme_tokens[b]))
+
+
 def validate(accent):
     """Return a list of contrast failures (empty = ok)."""
     bad = []
-    for name, t in zip(("light", "dark"), schemes(accent)):
-        c = lambda a, b: contrast(_hsl_to_rgb(t[a]), _hsl_to_rgb(t[b]))
+    for name, t in zip(("light", "dark"), schemes(accent), strict=True):
         for a, b, need in (
-            ("foreground", "background", 7), ("muted-foreground", "background", 4.5),
-            ("muted-foreground", "muted", 4.5), ("primary", "background", 4.5),
-            ("primary-foreground", "primary", 4.5), ("destructive-foreground", "destructive", 4.5),
-            ("success-foreground", "success", 4.5), ("destructive", "background", 4.5),
+            ("foreground", "background", 7),
+            ("muted-foreground", "background", 4.5),
+            ("muted-foreground", "muted", 4.5),
+            ("primary", "background", 4.5),
+            ("primary-foreground", "primary", 4.5),
+            ("destructive-foreground", "destructive", 4.5),
+            ("success-foreground", "success", 4.5),
+            ("destructive", "background", 4.5),
             ("input", "background", 3),
         ):
-            if c(a, b) < need:
-                bad.append(f"{accent}/{name}: {a} on {b} = {c(a, b):.2f} < {need}")
+            ratio = _ratio(t, a, b)
+            if ratio < need:
+                bad.append(f"{accent}/{name}: {a} on {b} = {ratio:.2f} < {need}")
     return bad
 
 
@@ -123,7 +148,7 @@ def _vars(t):
 def css(accent, tw=3):
     light, dark = schemes(accent)
     out = f"""/* house-style tokens (accent: {accent}). Generated by scripts/build.py, do not edit by hand. */
-{'@import "tailwindcss";' if tw == 4 else ''}
+{'@import "tailwindcss";' if tw == TAILWIND_4 else ""}
 :root {{
 {_vars(light)}
   --radius: {RADIUS};
@@ -147,10 +172,15 @@ body {{ background: hsl(var(--background)); color: hsl(var(--foreground)); -webk
   *, *::before, *::after {{ animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; scroll-behavior: auto !important; }}
 }}
 """
-    if tw == 4:
-        out += "@theme inline {\n" + "\n".join(f"  --color-{k}: hsl(var(--{k}));" for k in sorted(light)) + (
-            "\n  --radius-lg: var(--radius);\n  --radius-md: calc(var(--radius) - 2px);\n  --radius-sm: calc(var(--radius) - 4px);\n"
-            "  --font-sans: var(--font-geist-sans);\n  --font-mono: var(--font-geist-mono);\n}\n")
+    if tw == TAILWIND_4:
+        out += (
+            "@theme inline {\n"
+            + "\n".join(f"  --color-{k}: hsl(var(--{k}));" for k in sorted(light))
+            + (
+                "\n  --radius-lg: var(--radius);\n  --radius-md: calc(var(--radius) - 2px);\n  --radius-sm: calc(var(--radius) - 4px);\n"
+                "  --font-sans: var(--font-geist-sans);\n  --font-mono: var(--font-geist-mono);\n}\n"
+            )
+        )
     return out
 
 
@@ -164,13 +194,29 @@ def preset():
         else:
             colors[k] = f"hsl(var(--{k}))"
     import json
-    return ("/* house-style Tailwind v3 preset (web + NativeWind). Generated by scripts/build.py. */\n"
-            "module.exports = " + json.dumps({
+
+    return (
+        "/* house-style Tailwind v3 preset (web + NativeWind). Generated by scripts/build.py. */\n"
+        "module.exports = "
+        + json.dumps(
+            {
                 "darkMode": "class",
-                "theme": {"extend": {
-                    "colors": colors,
-                    "borderRadius": {"lg": "var(--radius)", "md": "calc(var(--radius) - 2px)", "sm": "calc(var(--radius) - 4px)"},
-                    "fontFamily": {"sans": ["var(--font-geist-sans)", "system-ui", "sans-serif"],
-                                   "mono": ["var(--font-geist-mono)", "ui-monospace", "monospace"]},
-                }},
-            }, indent=2) + ";\n")
+                "theme": {
+                    "extend": {
+                        "colors": colors,
+                        "borderRadius": {
+                            "lg": "var(--radius)",
+                            "md": "calc(var(--radius) - 2px)",
+                            "sm": "calc(var(--radius) - 4px)",
+                        },
+                        "fontFamily": {
+                            "sans": ["var(--font-geist-sans)", "system-ui", "sans-serif"],
+                            "mono": ["var(--font-geist-mono)", "ui-monospace", "monospace"],
+                        },
+                    }
+                },
+            },
+            indent=2,
+        )
+        + ";\n"
+    )

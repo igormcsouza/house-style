@@ -1,0 +1,43 @@
+# One command brings everything up: `cp .env.example .env && docker compose up --wait`
+# Host ports come from this project's fixed block (.house-style.json -> ports.base); container ports stay conventional.
+name: "{{name}}"
+
+services:
+  api:
+    build: { context: ./backend, dockerfile: Dockerfile }
+    ports: ["${API_PORT:-{{api_port}}}:8000"]
+    env_file: [{ path: .env, required: false }]
+    depends_on: { db: { condition: service_healthy } }
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request,sys; sys.exit(urllib.request.urlopen('http://localhost:8000/healthz').status != 200)"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+  web:
+    build: { context: ./frontend, dockerfile: Dockerfile }
+    ports: ["${WEB_PORT:-{{web_port}}}:3000"]
+    environment:
+      API_URL: http://api:8000
+    depends_on: { api: { condition: service_healthy } }
+
+  db:
+    image: postgres:17-alpine
+    ports: ["${DB_PORT:-{{db_port}}}:5432"]
+    environment:
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-local-dev-only}
+    volumes: [db-data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # AWS emulation for local CDK-backed resources (remove if unused)
+  aws:
+    image: localstack/localstack:3
+    ports: ["${AWS_PORT:-{{aws_port}}}:4566"]
+    environment: { SERVICES: "s3,dynamodb,sqs" }
+
+volumes:
+  db-data:

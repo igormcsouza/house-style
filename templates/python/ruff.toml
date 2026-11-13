@@ -1,0 +1,30 @@
+# house-style ruff config: correctness + security (bandit "S") + code smells. Copy to ruff.toml or [tool.ruff] in pyproject.
+line-length = 120
+target-version = "py312"
+
+[lint]
+select = [
+  "E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PT", "ASYNC", "T20",
+  "S",    # security (bandit)
+  "C90",  # cyclomatic complexity
+  "PLR",  # too many args/branches/statements, magic values
+  "ERA",  # commented-out (dead) code
+  "BLE",  # blind except
+  "TRY",  # exception smells
+  "PERF",
+]
+ignore = ["S101", "TRY003"]  # assert is fine outside prod paths, long messages are fine
+
+[lint.flake8-bugbear]
+extend-immutable-calls = ["fastapi.Depends", "fastapi.Query", "fastapi.Path", "fastapi.Body", "fastapi.Header", "fastapi.Security"]
+
+[lint.mccabe]
+max-complexity = 10
+
+[lint.pylint]
+max-args = 6
+max-branches = 12
+max-statements = 50
+
+[lint.per-file-ignores]
+"tests/**" = ["S", "PLR2004", "PLR0913", "ASYNC"]

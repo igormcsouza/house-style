@@ -1,0 +1,14 @@
+# Merge into your pyproject.toml. uv manages everything: `uv sync`, `uv run pytest`.
+[dependency-groups]
+dev = ["pytest", "pytest-cov", "httpx", "ruff"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=src --cov-report=term-missing --cov-fail-under=100"
+pythonpath = ["."]
+
+[tool.coverage.run]
+branch = false          # line coverage at 100%; turn on branch coverage if you want it stricter
+
+[tool.coverage.report]
+fail_under = 100
+exclude_also = ["if __name__ == .__main__.:", "@(abc\\.)?abstractmethod", "\\.\\.\\."]

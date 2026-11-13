@@ -1,4 +1,5 @@
 """App wiring only: health, error handlers, routers. Domains live in sibling packages (see rules/backend.md)."""
+
 import json
 import logging
 import sys
@@ -36,6 +37,7 @@ async def validation_handler(request: Request, exc: RequestValidationError):
 @app.get("/healthz")
 def healthz() -> dict:
     return {"status": "ok"}
+
 
 # Domain errors: register one handler per domain base exception, mapping to problem(...), e.g.
 # @app.exception_handler(NotFoundError) -> problem(404, "Not found", request, detail=str(exc))

@@ -18,7 +18,7 @@
 - Docs change in the same PR as behavior. Releases via `/house-style:release`.
 
 ## Hard stops (ask the user first)
-Deploying, changing prod auth, force push, deleting data, spending money, publishing a release.
+Deploying, changing prod auth, changing ports or auth callback/logout URLs (review login first), force push, deleting data, spending money, publishing a release.
 
 ## Gotchas
 - <non-obvious trap that already burned someone; delete when no longer true>

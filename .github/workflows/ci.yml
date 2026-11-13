@@ -42,6 +42,7 @@ jobs:
   templates:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         template: [fastmcp, fastapi, cdk]
     steps:

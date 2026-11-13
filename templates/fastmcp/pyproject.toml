@@ -5,4 +5,12 @@ requires-python = ">=3.11"
 dependencies = ["fastmcp"]
 
 [dependency-groups]
-dev = ["pytest", "httpx", "ruff"]
+dev = ["pytest", "pytest-cov", "httpx", "ruff"]
+
+[tool.pytest.ini_options]
+addopts = "--cov=server --cov-report=term-missing --cov-fail-under=100"
+pythonpath = ["."]
+
+[tool.coverage.report]
+fail_under = 100
+exclude_also = ["if __name__ == .__main__.:"]

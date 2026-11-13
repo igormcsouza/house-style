@@ -173,7 +173,9 @@ class Release(unittest.TestCase):
         with tempfile.TemporaryDirectory() as d:
             self.repo(d, "0.1.0")
             git(d, "tag", "-d", "v0.1.0")
-            self.assertIn("-> v0.1.0", self.run_rel(d).stdout)  # no tag yet: do not bump past the written version
+            out = self.run_rel(d).stdout  # no tag yet: do not bump past the written version
+            self.assertIn("v0.1.0", out)
+            self.assertNotIn("v0.1.1", out)
 
     def test_1x_rules_and_nothing_to_release(self):
         with tempfile.TemporaryDirectory() as d:

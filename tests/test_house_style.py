@@ -1,5 +1,6 @@
 """Run: python3 -m unittest discover -s tests -v   (stdlib only; icon test skips without network/ImageMagick)"""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -140,7 +141,9 @@ class Release(unittest.TestCase):
         git(d, "commit", "-qm", msg)
 
     def run_rel(self, d, *args):
-        return subprocess.run([sys.executable, str(ROOT / "scripts" / "release.py"), "--cwd", d, *args], capture_output=True, text=True)
+        ident = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}  # CI runners have no git identity
+        env = {**os.environ, **ident}
+        return subprocess.run([sys.executable, str(ROOT / "scripts" / "release.py"), "--cwd", d, *args], capture_output=True, text=True, env=env)
 
     def test_dry_run_and_apply_0x(self):
         with tempfile.TemporaryDirectory() as d:

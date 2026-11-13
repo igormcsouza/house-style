@@ -1,0 +1,11 @@
+{
+  "name": "house-style",
+  "version": "0.1.0",
+  "description": "One UI/UX, accessibility, backend and MCP+OAuth standard for every project. Stays active on each decision and steers Claude back to the style.",
+  "author": {
+    "name": "Igor Souza",
+    "url": "https://github.com/igormcsouza"
+  },
+  "license": "MIT",
+  "icon": "./.claude-plugin/icon.png"
+}

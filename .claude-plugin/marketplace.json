@@ -1,0 +1,14 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "house-style",
+  "description": "Personal design system and backend standard for Claude Code.",
+  "owner": { "name": "Igor Souza", "url": "https://github.com/igormcsouza" },
+  "plugins": [
+    {
+      "name": "house-style",
+      "description": "Tokens, rules, guard hooks, scaffolds and audit for a single cross-project standard.",
+      "source": "./",
+      "category": "development"
+    }
+  ]
+}

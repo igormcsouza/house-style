@@ -108,8 +108,8 @@ def main():
     nxt = bump(base, a.kind, cs) if cs else None
     if not nxt:
         sys.exit(f"nothing to release since {tag or 'the first commit'} (only docs/test/ci/chore commits)")
-    if not tag and a.kind == "auto" and base == "0.0.0":
-        nxt = "0.1.0"
+    if not tag:  # first release ships the version already written in the files
+        nxt = base if base != "0.0.0" else "0.1.0"
     full = nxt + (f"-{a.pre}.1" if a.pre else "")
     body = notes(cs)
     print(f"last tag: {tag or '(none)'}  ->  v{full}\nfiles: " + (", ".join(str(f.relative_to(root)) for f, _, _ in files) or "(no version file found!)") + f"\n\n{body}\n")

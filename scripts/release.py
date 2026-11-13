@@ -112,7 +112,7 @@ def main():
         nxt = base if base != "0.0.0" else "0.1.0"
     full = nxt + (f"-{a.pre}.1" if a.pre else "")
     body = notes(cs)
-    print(f"last tag: {tag or '(none)'}  ->  v{full}\nfiles: " + (", ".join(str(f.relative_to(root)) for f, _, _ in files) or "(no version file found!)") + f"\n\n{body}\n")
+    print(f"last tag: {tag or '(none)'}  ->  v{full}\nfiles: " + (", ".join(str(f.relative_to(root)) for f, _, _ in files) or "(none: version = git tag + CHANGELOG only)") + f"\n\n{body}\n")
     if a.notes_out:
         Path(a.notes_out).write_text(body + "\n")
     if not a.apply:

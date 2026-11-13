@@ -1,6 +1,5 @@
 {
   "name": "house-style",
-  "version": "0.1.0",
   "description": "One UI/UX, accessibility, backend and MCP+OAuth standard for every project. Stays active on each decision and steers Claude back to the style.",
   "author": {
     "name": "Igor Souza",

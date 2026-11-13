@@ -16,7 +16,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
-      - name: Manifests are valid JSON and versions agree
+      - name: Manifests are valid JSON and the version is unpinned
         run: |
           python3 - <<'PY'
           import json
@@ -24,7 +24,8 @@ jobs:
           m = json.load(open(".claude-plugin/marketplace.json"))
           json.load(open("hooks/hooks.json"))
           assert p["name"] == m["plugins"][0]["name"], "plugin/marketplace name mismatch"
-          print("manifests ok:", p["name"], p["version"])
+          assert "version" not in p and "version" not in m["plugins"][0], "do not pin a plugin version (commit SHA is the version)"
+          print("manifests ok:", p["name"], "(unpinned: every commit is a version)")
           PY
       - name: Contrast check (every accent)
         run: python3 scripts/build.py --check

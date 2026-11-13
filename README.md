@@ -28,7 +28,7 @@ Hooks only act where `.house-style.json` exists, so old projects are untouched u
 Read `rules/`.
 
 ## Layout
-`rules/` the standard · `lib/` tokens + checks + hygiene · `scripts/` build.py (tokens), brand.py (icons), audit.py, release.py · `hooks/` · `skills/` · `templates/` (nextjs, expo, fastapi, fastmcp, mkdocs, README/AGENTS/CONTRIBUTING/CHANGELOG, release workflows).
+`rules/` the standard · `lib/` tokens + checks + hygiene · `scripts/` build.py (tokens), brand.py (icons), scaffold.py (templates), audit.py, release.py · `hooks/` · `skills/` · `templates/` (nextjs, expo, fastapi, fastmcp, mkdocs, README/AGENTS/CONTRIBUTING/CHANGELOG, release workflows).
 
 ## Develop
 `python3 -m unittest discover -s tests -v` (stdlib only). Templates under `templates/fastmcp` and `templates/fastapi` have their own pytest suites (`uv sync && uv run pytest`).

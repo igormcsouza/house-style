@@ -5,7 +5,7 @@ Claude Code plugin: one UI/UX, a11y, backend, MCP+OAuth, docs and release standa
 ## Layout
 - `rules/`: the standard (core.md is injected every session; the rest is read on demand).
 - `lib/`: `tokens.py` (accents, contrast, CSS/preset), `checks.py` (violation rules), `hygiene.py` (repo docs/release checks), `cfg.py`.
-- `hooks/`: SessionStart, UserPromptSubmit, PreToolUse guard. `scripts/`: build.py, brand.py, audit.py, release.py. `skills/`: house-style, init, audit, release. `templates/`: scaffolds.
+- `hooks/`: SessionStart, UserPromptSubmit, PreToolUse guard. `scripts/`: build.py, brand.py, scaffold.py, audit.py, release.py. `skills/`: house-style, init, audit, release. `templates/`: scaffolds.
 
 ## Commands
 - Check everything: `python3 -m unittest discover -s tests` and `claude plugin validate .`

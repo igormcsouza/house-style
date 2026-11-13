@@ -12,7 +12,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="font-sans">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:p-3">Skip to content</a>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem>
-          <main id="main">{children}</main>
+          <main id="main">{children}</main> {/* layout owns the one <main>; pages must not render another */}
         </ThemeProvider>
       </body>
     </html>

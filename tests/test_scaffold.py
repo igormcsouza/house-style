@@ -5,6 +5,14 @@ import pytest
 import scaffold
 from conftest import ROOT, write
 
+SKIP_PARTS = {
+    "node_modules",
+    ".venv",
+    "__pycache__",
+    ".pytest_cache",
+    ".ruff_cache",
+}  # local artifacts, never templates
+
 
 @pytest.fixture
 def sc(argv, tmp_path, capsys):
@@ -197,5 +205,5 @@ def test_templates_are_compliant_with_the_standard():
     import checks
 
     for f in (ROOT / "templates").rglob("*"):
-        if f.is_file() and f.suffix in (".tsx", ".py") and "node_modules" not in f.parts:
+        if f.is_file() and f.suffix in (".tsx", ".py") and not SKIP_PARTS & set(f.parts):
             assert checks.check(f, f.read_text()) == [], f

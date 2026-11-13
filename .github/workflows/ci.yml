@@ -1,0 +1,51 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  plugin:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Manifests are valid JSON and versions agree
+        run: |
+          python3 - <<'PY'
+          import json
+          p = json.load(open(".claude-plugin/plugin.json"))
+          m = json.load(open(".claude-plugin/marketplace.json"))
+          json.load(open("hooks/hooks.json"))
+          assert p["name"] == m["plugins"][0]["name"], "plugin/marketplace name mismatch"
+          print("manifests ok:", p["name"], p["version"])
+          PY
+      - name: Contrast check (every accent)
+        run: python3 scripts/build.py --check
+      - name: Unit tests (checks, tokens, hooks, release, hygiene)
+        run: python3 -m unittest discover -s tests -v
+      - name: Self-audit (dogfood the standard)
+        run: python3 scripts/audit.py .
+
+  templates:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        template: [fastmcp, fastapi]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+      - name: ${{ matrix.template }} template tests
+        working-directory: templates/${{ matrix.template }}
+        run: |
+          uv sync
+          uv run pytest -q
+          uv run ruff check .

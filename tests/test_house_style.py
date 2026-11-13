@@ -1,5 +1,6 @@
 """Run: python3 -m unittest discover -s tests -v   (stdlib only; icon test skips without network/ImageMagick)"""
 import json
+import os
 import shutil
 import subprocess
 import sys
@@ -140,7 +141,9 @@ class Release(unittest.TestCase):
         git(d, "commit", "-qm", msg)
 
     def run_rel(self, d, *args):
-        return subprocess.run([sys.executable, str(ROOT / "scripts" / "release.py"), "--cwd", d, *args], capture_output=True, text=True)
+        ident = {"GIT_AUTHOR_NAME": "t", "GIT_AUTHOR_EMAIL": "t@t", "GIT_COMMITTER_NAME": "t", "GIT_COMMITTER_EMAIL": "t@t"}  # CI runners have no git identity
+        env = {**os.environ, **ident}
+        return subprocess.run([sys.executable, str(ROOT / "scripts" / "release.py"), "--cwd", d, *args], capture_output=True, text=True, env=env)
 
     def test_dry_run_and_apply_0x(self):
         with tempfile.TemporaryDirectory() as d:
@@ -210,11 +213,103 @@ class Hygiene(unittest.TestCase):
             self.assertIn("CHANGELOG.md missing", m)
 
 
+
+class Scaffold(unittest.TestCase):
+    def run_sc(self, d, *args):
+        r = subprocess.run([sys.executable, str(ROOT / "scripts" / "scaffold.py"), *args, "--dest", d], capture_output=True, text=True)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        return r.stdout
+
+    def test_nextjs_creates_config_and_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self.run_sc(d, "nextjs")
+            for f in ("components/skeleton.tsx", "components/states.tsx", "app/loading.tsx", "app/layout.tsx", "tailwind.config.ts"):
+                self.assertTrue((Path(d) / f).is_file(), f)
+            self.assertIn("house-style.preset.js", (Path(d) / "tailwind.config.ts").read_text())
+            self.assertIn('./house-style.css', (Path(d) / "app/layout.tsx").read_text())
+            (Path(d) / "components/skeleton.tsx").write_text("mine")
+            out = self.run_sc(d, "nextjs")
+            self.assertEqual((Path(d) / "components/skeleton.tsx").read_text(), "mine")  # never overwrites
+            self.assertIn("components/skeleton.tsx", out.split("skipped")[1])
+
+    def test_existing_tailwind_config_is_left_alone(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "tailwind.config.js").write_text("module.exports = {}")
+            out = self.run_sc(d, "nextjs")
+            self.assertFalse((Path(d) / "tailwind.config.ts").exists())
+            self.assertEqual((Path(d) / "tailwind.config.js").read_text(), "module.exports = {}")
+            self.assertIn("add `presets:", out)
+
+    def test_css_dir_differs_from_app_dir(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.run_sc(d, "nextjs", "--css-dir", "styles")
+            self.assertTrue((Path(d) / "app/layout.tsx").is_file())  # layout stays in app/
+            self.assertFalse((Path(d) / "styles/layout.tsx").exists())
+            self.assertIn('"../styles/house-style.css"', (Path(d) / "app/layout.tsx").read_text())
+            self.assertIn("./styles/house-style.preset.js", (Path(d) / "tailwind.config.ts").read_text())
+
+    def test_existing_layout_gets_a_note(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "app").mkdir()
+            (Path(d) / "app/layout.tsx").write_text('import "./globals.css";')
+            out = self.run_sc(d, "nextjs")
+            self.assertIn("layout.tsx exists: replace", out)
+            self.assertEqual((Path(d) / "app/layout.tsx").read_text(), 'import "./globals.css";')
+
+    def test_tailwind4_gets_no_config(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / "package.json").write_text('{"devDependencies":{"tailwindcss":"^4.1.0"}}')
+            out = self.run_sc(d, "nextjs")
+            self.assertFalse((Path(d) / "tailwind.config.ts").exists())
+            self.assertIn("Tailwind 4", out)
+        self.assertTrue(tokens.css("green", 4).lstrip().splitlines()[1].startswith('@import "tailwindcss"'))
+
+    def test_expo_and_mkdocs_and_api(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".house-style.json").write_text(json.dumps({"name": "Demo", "accent": "violet"}))
+            (Path(d) / "brand").mkdir()
+            (Path(d) / "brand/icon.svg").write_text("<svg/>")
+            self.run_sc(d, "expo")
+            self.assertIn("nativewind/preset", (Path(d) / "tailwind.config.js").read_text())
+            self.run_sc(d, "mkdocs")
+            y = (Path(d) / "mkdocs.yml").read_text()
+            self.assertIn("deep purple", y)
+            self.assertIn("Demo", y)
+            self.assertTrue((Path(d) / "docs/assets/icon.svg").is_file())
+            self.assertTrue((Path(d) / ".github/workflows/docs.yml").is_file())
+            self.run_sc(d, "fastmcp")
+            self.assertTrue((Path(d) / "server.py").is_file())
+
+    def test_docs_fill_placeholders_and_pass_hygiene(self):
+        with tempfile.TemporaryDirectory() as d:
+            out = self.run_sc(d, "docs", "--name", "Demo", "--owner", "me", "--repo", "demo", "--author", "Me")
+            readme = (Path(d) / "README.md").read_text()
+            self.assertIn("github.com/me/demo", readme)
+            self.assertNotIn("<Name>", readme)
+            self.assertNotIn("badge/docs", readme)  # no mkdocs -> no docs badge/section
+            self.assertNotIn("## Documentation", readme)
+            self.assertNotIn("brand/icon.svg", readme)  # no icon yet
+            self.assertIn("Me", (Path(d) / "LICENSE").read_text())
+            self.assertEqual((Path(d) / "CLAUDE.md").read_text().strip(), "@AGENTS.md")
+            self.assertEqual(hygiene.check_repo(d), [])
+            (Path(d) / "CLAUDE.md").write_text("old stuff")
+            self.assertIn("move it into AGENTS.md", self.run_sc(d, "docs"))
+            self.assertEqual((Path(d) / "CLAUDE.md").read_text(), "old stuff")
+
+
 class Brand(unittest.TestCase):
+    def test_arc_flags_are_expanded(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import brand
+        self.assertEqual(brand.fix_arcs("M3 3a10 10 0 0010-10z"), "M3 3a10 10 0 0 0 10 -10 z")
+        self.assertEqual(brand.fix_arcs("A5,5,0,01-5,5"), "A5 5 0 0 1 -5 5 ")
+        self.assertEqual(brand.fix_arcs("a2 2 0 1 0 4 0 2 2 0 1 0 -4 0"), "a2 2 0 1 0 4 0 2 2 0 1 0 -4 0 ")  # repeated arcs, already spaced
+
+
     @unittest.skipUnless(shutil.which("convert") or shutil.which("magick"), "ImageMagick missing")
     def test_icon_set(self):
         with tempfile.TemporaryDirectory() as d:
-            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "brand.py"), "--name", "T", "--icon", "rocket", "--accent", "violet"], cwd=d, capture_output=True, text=True)
+            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "brand.py"), "--name", "T", "--icon", "leaf", "--accent", "violet"], cwd=d, capture_output=True, text=True)
             if "could not fetch" in (r.stderr + r.stdout):
                 self.skipTest("no network for lucide")
             self.assertEqual(r.returncode, 0, r.stderr)

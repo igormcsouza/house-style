@@ -31,7 +31,51 @@ def glyph(name):
             svg = urllib.request.urlopen(LUCIDE.format(name), timeout=15).read().decode()
         except Exception as e:
             sys.exit(f"could not fetch lucide icon '{name}' ({e}). Check the name at https://lucide.dev/icons")
-    return re.search(r"<svg[^>]*>(.*)</svg>", svg, re.S).group(1).strip()
+    inner = re.search(r"<svg[^>]*>(.*)</svg>", svg, re.S).group(1).strip()
+    return re.sub(r'(\sd=")([^"]*)(")', lambda m: m.group(1) + fix_arcs(m.group(2)) + m.group(3), inner)
+
+
+NUM = re.compile(r"[-+]?(?:\d+\.?\d*|\.\d+)(?:[eE][-+]?\d+)?")
+
+
+def fix_arcs(d):
+    """Expand SVG path arc commands so every flag is its own token (`a10 10 0 0010-10` -> `a10 10 0 0 0 10 -10`).
+    ImageMagick's built-in renderer cannot parse the compact form that Lucide uses."""
+    out, i, n = [], 0, len(d)
+    while i < n:
+        c = d[i]
+        if c in "aA":
+            out.append(c)
+            i += 1
+            while True:
+                vals = []
+                for k in range(7):
+                    while i < n and d[i] in " ,\t\n\r":
+                        i += 1
+                    if k in (3, 4) and i < n and d[i] in "01":
+                        vals.append(d[i])
+                        i += 1
+                        continue
+                    m = NUM.match(d, i)
+                    if not m:
+                        break
+                    vals.append(m.group())
+                    i = m.end()
+                if len(vals) < 7:
+                    out.append(" ".join(vals))
+                    break
+                out.append(" ".join(vals) + " ")
+                j = i
+                while j < n and d[j] in " ,\t\n\r":
+                    j += 1
+                if j < n and (d[j] in "-+.0123456789"):
+                    i = j  # implicit repeated arc
+                    continue
+                break
+        else:
+            out.append(c)
+            i += 1
+    return "".join(out)
 
 
 def tile(inner, fill, ink, size=512, pad=96, radius=112, bg=True):
@@ -64,9 +108,13 @@ def main():
     (out / "adaptive-foreground.svg").write_text(tile(inner, fill, ink, pad=170, bg=False))
     (out / "adaptive-background.txt").write_text(fill + "\n")
     conv = shutil.which("magick") or shutil.which("convert")
+    rsvg = shutil.which("rsvg-convert")
     if conv:
         def png(src, dst, px):
-            subprocess.run([conv, "-background", "none", "-density", "600", str(out / src), "-resize", f"{px}x{px}", str(out / dst)], check=True)
+            if rsvg:  # best fidelity when installed (apt install librsvg2-bin)
+                subprocess.run([rsvg, "-w", str(px), "-h", str(px), "-o", str(out / dst), str(out / src)], check=True)
+            else:
+                subprocess.run([conv, "-background", "none", "-density", "600", str(out / src), "-resize", f"{px}x{px}", str(out / dst)], check=True)
         for dst, px in (("icon-1024.png", 1024), ("icon-512.png", 512), ("icon-192.png", 192), ("apple-icon.png", 180)):
             png("icon.svg", dst, px)
         png("adaptive-foreground.svg", "adaptive-foreground.png", 1024)

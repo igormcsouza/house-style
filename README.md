@@ -10,6 +10,9 @@ It stays active on every decision Claude makes in an opted-in project and steers
 ```
 Then, inside a project: `/house-style:init`.
 
+### Updates
+There is no pinned `version`: every merge to `main` is a new plugin version (commit SHA). Turn on **Enable auto-update** under `/plugin` > Marketplaces > house-style (off by default for third-party marketplaces); it applies after your first message plus up to ~10 minutes, then run `/reload-plugins`. Manual: `/plugin marketplace update house-style` then `claude plugin update house-style@house-style`. To stay on a milestone: `/plugin marketplace add igormcsouza/house-style#v0.1.0`.
+
 ## How it stays alive
 | Layer | What it does |
 |---|---|

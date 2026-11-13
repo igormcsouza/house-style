@@ -1,4 +1,5 @@
 """Repo-level docs/release hygiene checks (README, AGENTS.md, CHANGELOG, tags). Stdlib only."""
+import json
 import re
 import subprocess
 from pathlib import Path
@@ -41,4 +42,11 @@ def check_repo(root):
         out.append(f"tags not in vX.Y.Z form: {', '.join(bad[:5])}")
     if tags and not (root / "CHANGELOG.md").is_file():
         out.append("CHANGELOG.md missing (released project; `scripts/release.py` creates it)")
+    manifest = root / ".claude-plugin" / "plugin.json"
+    if manifest.is_file():
+        try:
+            if "version" in json.loads(manifest.read_text()):
+                out.append("plugin.json pins `version`: installed copies only update when it changes. Omit it so every commit is a new version (rules/releasing.md)")
+        except ValueError:
+            out.append(".claude-plugin/plugin.json is not valid JSON")
     return out

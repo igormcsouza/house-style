@@ -177,6 +177,22 @@ class Release(unittest.TestCase):
             self.assertIn("v0.1.0", out)
             self.assertNotIn("v0.1.1", out)
 
+    def test_no_version_file_uses_tag_and_changelog(self):
+        with tempfile.TemporaryDirectory() as d:
+            git(d, "init", "-q", "-b", "main")
+            (Path(d) / "a.txt").write_text("1")
+            git(d, "add", "-A")
+            git(d, "commit", "-qm", "feat: first")
+            git(d, "tag", "v0.1.0")
+            self.commit(d, "fix: second (#2)")
+            r = self.run_rel(d)
+            self.assertIn("v0.1.1", r.stdout)
+            self.assertIn("git tag + CHANGELOG only", r.stdout)
+            r = self.run_rel(d, "--apply")
+            self.assertEqual(r.returncode, 0, r.stderr + r.stdout)
+            self.assertIn("## [0.1.1]", (Path(d) / "CHANGELOG.md").read_text())
+            self.assertEqual(git(d, "log", "-1", "--format=%s"), "release: v0.1.1")
+
     def test_1x_rules_and_nothing_to_release(self):
         with tempfile.TemporaryDirectory() as d:
             self.repo(d, "1.4.2")
@@ -201,6 +217,14 @@ class Release(unittest.TestCase):
 
 
 class Hygiene(unittest.TestCase):
+    def test_pinned_plugin_version_is_flagged(self):
+        with tempfile.TemporaryDirectory() as d:
+            (Path(d) / ".claude-plugin").mkdir()
+            (Path(d) / ".claude-plugin/plugin.json").write_text('{"name":"x","version":"1.0.0"}')
+            self.assertIn("pins `version`", " ".join(hygiene.check_repo(d)))
+            (Path(d) / ".claude-plugin/plugin.json").write_text('{"name":"x"}')
+            self.assertNotIn("pins `version`", " ".join(hygiene.check_repo(d)))
+
     def test_findings_and_clean(self):
         with tempfile.TemporaryDirectory() as d:
             msgs = " ".join(hygiene.check_repo(d))

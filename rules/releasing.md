@@ -8,7 +8,7 @@
 - **Conventional Commits**, subject <= 72 chars, imperative, PR number appended: `feat(router): opt-in claude harness (#5)`.
   Types: `feat`, `fix`, `perf`, `refactor`, `docs`, `test`, `build`, `ci`, `chore`. Breaking = `!` after type (`feat!:`) and/or a `BREAKING CHANGE:` footer saying how to migrate.
 - Branches `<type>/<issue>-<kebab>` (`feat/12-oauth-login`, `bug-fix/9-null-title`, `ci/...`). One PR per slice, squash-merge with the conventional title, `Refs #N`/`Closes #N`.
-- **One version source per project** (pyproject `version`, `package.json`, `app.json`, `__version__`, `plugin.json` - all kept equal by `release.py`).
+- **One version source per project** (pyproject `version`, `package.json`, `app.json`, `__version__` - all kept equal by `release.py`). **Claude Code plugins are the exception: do NOT set `version` in `plugin.json` or the marketplace entry.** A pinned version means installed copies only update when the string changes; with it omitted, every commit on the marketplace branch is a new version (commit SHA) and updates flow by themselves. The git tag + CHANGELOG are then the human-facing milestone.
 - `CHANGELOG.md` (Keep a Changelog) is generated from commits at release time; the same section is the GitHub Release body.
 
 ## Release notes format
@@ -25,6 +25,6 @@ Steps 3-4 are outward-facing: confirm with the user before each.
 ## Delivery
 - **Libraries/CLIs (PyPI/npm)**: publish ONLY from a published GitHub Release (`templates/release/delivery-pypi.yml`): tag must equal the package version, pre-releases skipped, PyPI trusted publishing via OIDC (no stored secrets), sdist+wheel attached to the release.
 - **Apps (AWS)**: deploy workflows run from `main`/tag; prod deploys need the user's OK (hard stop). Mobile builds: `mobile-release` workflow on tag.
-- **Plugins**: version in `.claude-plugin/plugin.json` is the release; users update with `/plugin update`.
+- **Plugins**: no `version` field (see above), so `main` is the release channel (PR + CI gated). Users turn on **Enable auto-update** for the marketplace in `/plugin` (off by default for third-party marketplaces), or run `/plugin marketplace update <name>` then `claude plugin update <plugin>@<name>`; a running session needs `/reload-plugins`. To hold a machine on a milestone: `/plugin marketplace add <owner>/<repo>#vX.Y.Z`. Your own dev machine: add the local clone as a marketplace (`/plugin marketplace add ~/Projects/<repo>`) to load it in place, or `claude --plugin-dir <path>`.
 - **Docs**: Pages deploy on push to `main` (`templates/release/docs.yml`).
 Never move or delete a published tag; ship a new patch instead. Never publish from a laptop.

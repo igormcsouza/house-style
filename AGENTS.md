@@ -17,6 +17,7 @@ Claude Code plugin: one UI/UX, a11y, backend, MCP+OAuth, docs and release standa
 - Conventional Commits, `feat/...` branches, releases via `scripts/release.py` (never hand-edit versions or CHANGELOG).
 - A new rule needs: text in `rules/`, a check in `lib/checks.py` when machine-checkable, and a test. Keep `rules/core.md` short: it costs tokens every session.
 - Hooks must never crash or block on their own errors (fail open).
+- `plugin.json` has NO `version` on purpose: every commit on main is a new plugin version (commit SHA). Do not add one; hygiene flags it.
 
 ## Hard stops (ask first)
 Publishing the repo/releases, changing the default accent or the standard's bans, anything that touches the user's other projects.

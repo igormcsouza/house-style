@@ -14,4 +14,5 @@ Rules: `${CLAUDE_PLUGIN_ROOT}/rules/releasing.md`. Pushing, merging and creating
 4. Ask before pushing the branch and opening the PR (title `release: vX.Y.Z (<summary>)`, body = notes). Wait for green CI and the user's merge.
 5. After merge, ask before: `gh release create vX.Y.Z --target main --title vX.Y.Z --notes-file <notes>` (`--prerelease` for rc). That creates the tag and triggers delivery.
 6. Verify: delivery workflow green (`gh run watch`), release page shows notes, package/Pages updated. Report what shipped and anything unverified.
+Plugins (`.claude-plugin/plugin.json`) carry no `version`: the release is the tag + CHANGELOG, and updates reach users by commit SHA.
 Never move/delete a published tag; fix forward with a patch. Never publish from the laptop.

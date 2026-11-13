@@ -290,10 +290,18 @@ class Scaffold(unittest.TestCase):
 
 
 class Brand(unittest.TestCase):
+    def test_arc_flags_are_expanded(self):
+        sys.path.insert(0, str(ROOT / "scripts"))
+        import brand
+        self.assertEqual(brand.fix_arcs("M3 3a10 10 0 0010-10z"), "M3 3a10 10 0 0 0 10 -10 z")
+        self.assertEqual(brand.fix_arcs("A5,5,0,01-5,5"), "A5 5 0 0 1 -5 5 ")
+        self.assertEqual(brand.fix_arcs("a2 2 0 1 0 4 0 2 2 0 1 0 -4 0"), "a2 2 0 1 0 4 0 2 2 0 1 0 -4 0 ")  # repeated arcs, already spaced
+
+
     @unittest.skipUnless(shutil.which("convert") or shutil.which("magick"), "ImageMagick missing")
     def test_icon_set(self):
         with tempfile.TemporaryDirectory() as d:
-            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "brand.py"), "--name", "T", "--icon", "rocket", "--accent", "violet"], cwd=d, capture_output=True, text=True)
+            r = subprocess.run([sys.executable, str(ROOT / "scripts" / "brand.py"), "--name", "T", "--icon", "leaf", "--accent", "violet"], cwd=d, capture_output=True, text=True)
             if "could not fetch" in (r.stderr + r.stdout):
                 self.skipTest("no network for lucide")
             self.assertEqual(r.returncode, 0, r.stderr)

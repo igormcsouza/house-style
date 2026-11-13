@@ -1,13 +1,14 @@
 #!/usr/bin/env python3
 """PreToolUse (Edit|Write|MultiEdit): block writes that break house-style, so Claude self-corrects.
 Only active inside a project that opted in with .house-style.json."""
+
 import json
 import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
-import cfg  # noqa: E402
-import checks  # noqa: E402
+import cfg
+import checks
 
 
 def new_text(tool_input):

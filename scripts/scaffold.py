@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Copy house-style templates into a project. Never overwrites an existing file; prints created/skipped.
   scaffold.py STACK [--dest .] [--css-dir app] [--app-dir app] [--name N] [--owner O] [--repo R] [--author A] [--accent green]
-STACK: nextjs | expo | mkdocs | fastapi | fastmcp | docs   (docs = README/AGENTS/CLAUDE/CONTRIBUTING/CHANGELOG/LICENSE/PR template)"""
+STACK: nextjs | expo | mkdocs | fastapi | fastmcp | docker | e2e | python | cdk | docs   (docs = README/AGENTS/CLAUDE/CONTRIBUTING/CHANGELOG/LICENSE/PR template)"""
+
 import argparse
 import datetime
 import json
@@ -11,11 +12,13 @@ import sys
 from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent / "lib"))
-import tokens  # noqa: E402
+import ports
+import tokens
 
 T = Path(__file__).resolve().parent.parent / "templates"
+TAILWIND_4 = 4
 TW_CONFIGS = ("tailwind.config.ts", "tailwind.config.js", "tailwind.config.mjs", "tailwind.config.cjs")
-NEXT_CONFIG = '''import type { Config } from "tailwindcss";
+NEXT_CONFIG = """import type { Config } from "tailwindcss";
 
 const config: Config = {
   presets: [require("./{css}/house-style.preset.js")],
@@ -23,12 +26,12 @@ const config: Config = {
 };
 
 export default config;
-'''
-EXPO_CONFIG = '''module.exports = {
+"""
+EXPO_CONFIG = """module.exports = {
   presets: [require("nativewind/preset"), require("./{css}/house-style.preset.js")],
   content: ["./app/**/*.{js,jsx,ts,tsx}", "./components/**/*.{js,jsx,ts,tsx}"],
 };
-'''
+"""
 
 
 class Out:
@@ -58,13 +61,20 @@ def fill(text, a):
 
 def docs(o, a):
     d = o.dest
-    for rel, src in (("README.md", "README.md"), ("AGENTS.md", "AGENTS.md"), ("CONTRIBUTING.md", "CONTRIBUTING.md"),
-                     ("CHANGELOG.md", "CHANGELOG.md"), (".github/pull_request_template.md", "release/pull_request_template.md")):
+    for rel, src in (
+        ("README.md", "README.md"),
+        ("AGENTS.md", "AGENTS.md"),
+        ("CONTRIBUTING.md", "CONTRIBUTING.md"),
+        ("CHANGELOG.md", "CHANGELOG.md"),
+        (".github/pull_request_template.md", "release/pull_request_template.md"),
+    ):
         text = fill((T / src).read_text(), a)
         if src == "README.md":
             if not (d / "mkdocs.yml").exists():  # no docs site: drop its badge and section
                 text = "\n".join(ln for ln in text.splitlines() if "badge/docs" not in ln)
-                text = text.replace("## Documentation\n\nFull docs: <link>. Architecture and decisions: `docs/project/`.\n\n", "")
+                text = text.replace(
+                    "## Documentation\n\nFull docs: <link>. Architecture and decisions: `docs/project/`.\n\n", ""
+                )
             if not (d / "brand/icon.svg").exists():
                 text = text.replace('<img src="brand/icon.svg" alt="" width="56" align="left">\n\n', "")
         o.put(rel, text)
@@ -72,7 +82,9 @@ def docs(o, a):
     if not claude.exists():
         o.put("CLAUDE.md", "@AGENTS.md\n")
     elif claude.read_text().strip() != "@AGENTS.md":
-        o.notes.append("CLAUDE.md exists with its own content: move it into AGENTS.md, then make CLAUDE.md just `@AGENTS.md`")
+        o.notes.append(
+            "CLAUDE.md exists with its own content: move it into AGENTS.md, then make CLAUDE.md just `@AGENTS.md`"
+        )
     lic = (Path(__file__).resolve().parent.parent / "LICENSE").read_text()
     o.put("LICENSE", lic.replace("2026 Igor Souza", f"{datetime.date.today().year} {a.author}"))
 
@@ -87,8 +99,10 @@ def tw_major(dest):
 
 
 def tailwind_config(o, a, body):
-    if tw_major(o.dest) >= 4:
-        o.notes.append("Tailwind 4: no tailwind.config needed; generate tokens with `build.py --tailwind 4` (house-style.css imports tailwindcss itself, remove the default globals.css import)")
+    if tw_major(o.dest) >= TAILWIND_4:
+        o.notes.append(
+            "Tailwind 4: no tailwind.config needed; generate tokens with `build.py --tailwind 4` (house-style.css imports tailwindcss itself, remove the default globals.css import)"
+        )
     elif any((o.dest / c).exists() for c in TW_CONFIGS):
         o.notes.append(f'tailwind config exists: add `presets: [require("./{a.css_dir}/house-style.preset.js")]` to it')
     else:
@@ -96,43 +110,123 @@ def tailwind_config(o, a, body):
         o.put(name, text.replace("{css}", a.css_dir))
 
 
+def _nextjs(o, a):
+    for f in ("skeleton", "spinner", "action-button", "states", "theme-toggle"):
+        o.put(f"components/{f}.tsx", src=T / "nextjs" / f"{f}.tsx")
+    o.put(f"{a.app_dir}/loading.tsx", src=T / "nextjs" / "loading.tsx")
+    css_import = "./house-style.css" if a.css_dir == a.app_dir else f"../{a.css_dir}/house-style.css"
+    layout = (T / "nextjs" / "layout.snippet.tsx").read_text().replace("./globals.css", css_import)
+    o.put(f"{a.app_dir}/layout.tsx", layout)
+    existing = o.dest / a.app_dir / "layout.tsx"
+    if f"{a.app_dir}/layout.tsx" in o.skipped and "house-style.css" not in existing.read_text():
+        o.notes.append(
+            f'{a.app_dir}/layout.tsx exists: replace the globals.css import with "{css_import}", wrap children in '
+            '<ThemeProvider attribute="class" defaultTheme="system" enableSystem><main id="main">...</main></ThemeProvider>, '
+            "add suppressHydrationWarning on <html> and a skip link (see templates/nextjs/layout.snippet.tsx)"
+        )
+    tailwind_config(o, a, ("tailwind.config.ts", NEXT_CONFIG))
+    for f in ("vitest.config.mts", "vitest.setup.ts"):
+        o.put(f, src=T / "nextjs" / f)
+    o.put("tests/house-style.test.tsx", src=T / "nextjs" / "tests" / "house-style.test.tsx")
+    o.notes.append(
+        "install: npm i lucide-react next-themes clsx tailwind-merge; npx shadcn@latest init && npx shadcn@latest add button "
+        "(templates import @/components/ui/button and @/lib/utils)"
+    )
+    o.notes.append(
+        "tests: npm i -D @types/node@^22 vitest @vitest/coverage-v8 jsdom @testing-library/react @testing-library/dom "
+        "@testing-library/jest-dom (create-next-app pins @types/node@^20, which conflicts with vitest 5); "
+        'add scripts "test": "vitest run --coverage"; every new page/component needs a test (thresholds are 100)'
+    )
+
+
+def _expo(o, a):
+    for f in ("Skeleton", "ActionButton", "States"):
+        o.put(f"components/{f}.tsx", src=T / "expo" / f"{f}.tsx")
+    tailwind_config(o, a, ("tailwind.config.js", EXPO_CONFIG))
+    o.notes.append(
+        "install: npx expo install nativewind react-native-reanimated lucide-react-native react-native-svg; "
+        "import house-style.css in app/_layout.tsx"
+    )
+
+
+def _mkdocs(o, a):
+    text = (T / "mkdocs" / "mkdocs.yml").read_text().replace("{{name}}", a.name)
+    o.put("mkdocs.yml", text.replace("{{accent}}", tokens.MATERIAL[a.accent]))
+    if (o.dest / "brand/icon.svg").exists():
+        o.put("docs/assets/icon.svg", src=o.dest / "brand/icon.svg")
+    o.put("docs/index.md", f"# {a.name}\n\nWhat it is, why it exists, how to start.\n")
+    o.put(".github/workflows/docs.yml", src=T / "release" / "docs.yml")
+
+
+def _docker(o, a):
+    base = a.port_base
+    text = (T / "docker" / "docker-compose.yml").read_text().replace("{{name}}", a.name)
+    for i, slot in enumerate(ports.SLOT_NAMES):
+        text = text.replace("{{" + slot + "_port}}", str(base + i))
+    o.put("docker-compose.yml", text)
+    o.put("backend/Dockerfile", src=T / "docker" / "Dockerfile.api")
+    o.put("frontend/Dockerfile", src=T / "docker" / "Dockerfile.web")
+    o.put(".dockerignore", src=T / "docker" / ".dockerignore")
+    o.put(".env.example", src=T / "docker" / ".env.example")
+    o.notes.append(
+        f"ports: this project owns {base}-{base + ports.SLOTS - 1} (web {base}, api {base + 1}, db {base + 2}, aws {base + 5}); "
+        'Next needs `output: "standalone"` for frontend/Dockerfile; keep `.env` git-ignored'
+    )
+
+
+def _e2e(o, a):
+    text = (T / "e2e" / "playwright.config.ts").read_text().replace("{{web_port}}", str(a.port_base))
+    o.put("playwright.config.ts", text)
+    o.put("e2e/smoke.spec.ts", src=T / "e2e" / "e2e" / "smoke.spec.ts")
+    o.notes.append(
+        "install: npm i -D @playwright/test @axe-core/playwright && npx playwright install --with-deps chromium; "
+        "run: npx playwright test (starts `docker compose up --wait`)"
+    )
+
+
+def _python(o, a):
+    o.put("ruff.toml", src=T / "python" / "ruff.toml")
+    o.put("scripts/check.sh", src=T / "python" / "scripts" / "check.sh")
+    (o.dest / "scripts" / "check.sh").chmod(0o755)
+    o.notes.append(
+        "merge templates/python/pyproject.fragment.toml into pyproject.toml (pytest + 100% coverage); "
+        "then `uv sync && ./scripts/check.sh`"
+    )
+
+
+def _copy_tree(o, src, prefix=""):
+    for f in sorted(src.rglob("*")):
+        if f.is_file() and "__pycache__" not in f.parts:
+            o.put(f"{prefix}{f.relative_to(src)}", src=f)
+
+
+def _cdk(o, a):
+    _copy_tree(o, T / "cdk", prefix="infra/")
+    o.notes.append("cd infra && uv sync && uv run pytest; deploy only with the user's OK (hard stop)")
+
+
+STACKS = {
+    "nextjs": _nextjs,
+    "expo": _expo,
+    "mkdocs": _mkdocs,
+    "docker": _docker,
+    "e2e": _e2e,
+    "python": _python,
+    "cdk": _cdk,
+    "fastapi": lambda o, a: _copy_tree(o, T / "fastapi"),
+    "fastmcp": lambda o, a: _copy_tree(o, T / "fastmcp"),
+    "docs": docs,
+}
+
+
 def stack(o, a):
-    s = a.stack
-    if s == "nextjs":
-        for f in ("skeleton", "spinner", "action-button", "states", "theme-toggle"):
-            o.put(f"components/{f}.tsx", src=T / "nextjs" / f"{f}.tsx")
-        o.put(f"{a.app_dir}/loading.tsx", src=T / "nextjs" / "loading.tsx")
-        css_import = "./house-style.css" if a.css_dir == a.app_dir else f"../{a.css_dir}/house-style.css"
-        layout = (T / "nextjs" / "layout.snippet.tsx").read_text().replace("./globals.css", css_import)
-        o.put(f"{a.app_dir}/layout.tsx", layout)
-        existing = o.dest / a.app_dir / "layout.tsx"
-        if f"{a.app_dir}/layout.tsx" in o.skipped and "house-style.css" not in existing.read_text():
-            o.notes.append(f'{a.app_dir}/layout.tsx exists: replace the globals.css import with "{css_import}", wrap children in <ThemeProvider attribute="class" defaultTheme="system" enableSystem><main id="main">...</main></ThemeProvider>, add suppressHydrationWarning on <html> and a skip link (see templates/nextjs/layout.snippet.tsx)')
-        tailwind_config(o, a, ("tailwind.config.ts", NEXT_CONFIG))
-        o.notes.append("install: npm i lucide-react next-themes clsx tailwind-merge; npx shadcn@latest init && npx shadcn@latest add button (templates import @/components/ui/button and @/lib/utils)")
-    elif s == "expo":
-        for f in ("Skeleton", "ActionButton", "States"):
-            o.put(f"components/{f}.tsx", src=T / "expo" / f"{f}.tsx")
-        tailwind_config(o, a, ("tailwind.config.js", EXPO_CONFIG))
-        o.notes.append("install: npx expo install nativewind react-native-reanimated lucide-react-native react-native-svg; import house-style.css in app/_layout.tsx")
-    elif s == "mkdocs":
-        o.put("mkdocs.yml", (T / "mkdocs" / "mkdocs.yml").read_text().replace("{{name}}", a.name).replace("{{accent}}", tokens.MATERIAL[a.accent]))
-        if (o.dest / "brand/icon.svg").exists():
-            o.put("docs/assets/icon.svg", src=o.dest / "brand/icon.svg")
-        o.put("docs/index.md", f"# {a.name}\n\nWhat it is, why it exists, how to start.\n")
-        o.put(".github/workflows/docs.yml", src=T / "release" / "docs.yml")
-    elif s in ("fastapi", "fastmcp"):
-        for f in sorted((T / s).rglob("*")):
-            if f.is_file() and "__pycache__" not in f.parts:
-                o.put(f.relative_to(T / s), src=f)
-    elif s == "docs":
-        docs(o, a)
+    STACKS[a.stack](o, a)
     return o
 
 
 def main():
     p = argparse.ArgumentParser()
-    p.add_argument("stack", choices=("nextjs", "expo", "mkdocs", "fastapi", "fastmcp", "docs"))
+    p.add_argument("stack", choices=sorted(STACKS))
     p.add_argument("--dest", default=".")
     p.add_argument("--css-dir", default="app", help="where house-style.css/.preset.js live (build.py --out)")
     p.add_argument("--app-dir", default="app", help="Next.js app directory for layout.tsx/loading.tsx")
@@ -141,6 +235,7 @@ def main():
     p.add_argument("--name", default=None)
     p.add_argument("--owner", default="<owner>")
     p.add_argument("--repo", default=None)
+    p.add_argument("--workspace", help="parent dir of your other projects (port block avoids their ports)")
     a = p.parse_args()
     dest = Path(a.dest).resolve()
     cfg = dest / ".house-style.json"
@@ -149,6 +244,9 @@ def main():
     a.repo = a.repo or dest.name
     a.author = a.author or git_user()
     a.accent = conf.get("accent", a.accent)
+    a.port_base = ports.configured_base(dest) or ports.block_for(
+        a.name, set().union(*ports.workspace_ports(a.workspace, exclude=dest.name).values()) if a.workspace else set()
+    )
     o = stack(Out(dest), a)
     print("created: " + (", ".join(o.created) or "-"))
     print("skipped (already exist): " + (", ".join(o.skipped) or "-"))

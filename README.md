@@ -17,6 +17,13 @@ There is no pinned `version`: every merge to `main` is a new plugin version (its
 - **Stay on a milestone:** `/plugin marketplace add igormcsouza/house-style#v0.1.0`.
 - **Developing the plugin:** add your clone as the marketplace (`/plugin marketplace add ~/Projects/house-style`) to load it in place (edits apply at the next session or `/reload-plugins`), or run `claude --plugin-dir ~/Projects/house-style` for one session.
 
+## What `/house-style:audit` checks
+- **Code**: hard-coded colors, emoji icons, banned UI/icon libs, hidden scrollbars, missing `alt`/focus, fonts; security smells (CORS `*`, `debug=True`, `verify=False`, `shell=True`, `eval`, string SQL, `pickle`, JWT without signature, hard-coded secrets); `unittest` in tests.
+- **Docs/release**: README, AGENTS.md, CLAUDE.md, CONTRIBUTING, CHANGELOG, LICENSE, `vX.Y.Z` tags, unpinned plugin version.
+- **Project**: `uv` + `uv.lock` (no requirements/Poetry), pytest with a 100% coverage gate, vitest/jest thresholds at 100, FastAPI domain packages, `docker compose`, fixed non-default ports without collisions, AWS = CDK in Python, Playwright e2e (mobile viewport + axe) when there is frontend + backend + infra.
+- **Login after a port change**: lines in CDK/backend/env/docs that name a local port in a login or CORS context (Cognito callback/logout URLs, `allow_origins`, base URLs). Moving to the fixed block can break sign-in silently, so `scripts/ports.py` lists them before you change anything.
+- `--deep`: runs ruff (security `S`, complexity, dead code) and pip-audit through uv. `--workspace ~/Projects`: detects port collisions across your projects.
+
 ## How it stays alive
 | Layer | What it does |
 |---|---|

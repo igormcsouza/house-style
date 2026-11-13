@@ -2,4 +2,4 @@ __pycache__/
 .venv/
 .pytest_cache/
 .coverage
-uv.lock
+templates/*/uv.lock

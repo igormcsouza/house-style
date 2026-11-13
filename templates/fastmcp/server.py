@@ -1,5 +1,6 @@
 """MCP server: standalone FastMCP + OAuth with auto-discovery. Config is env-only.
 Run: `uv run python server.py` (HTTP on :8000/mcp). Env: MCP_BASE_URL, OIDC_ISSUER, OIDC_JWKS_URI, OIDC_AUDIENCE."""
+
 import os
 
 from fastmcp import FastMCP
@@ -35,4 +36,5 @@ def build(auth=None) -> FastMCP:
 
 
 if __name__ == "__main__":
-    build(build_auth()).run(transport="http", host="0.0.0.0", port=8000)
+    # Bind to localhost by default; the container sets MCP_HOST=0.0.0.0 explicitly.
+    build(build_auth()).run(transport="http", host=os.environ.get("MCP_HOST", "127.0.0.1"), port=8000)

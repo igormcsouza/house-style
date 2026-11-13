@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Copy house-style templates into a project. Never overwrites an existing file; prints created/skipped.
-  scaffold.py STACK [--dest .] [--css-dir app] [--name N] [--owner O] [--repo R] [--author A] [--accent green]
+  scaffold.py STACK [--dest .] [--css-dir app] [--app-dir app] [--name N] [--owner O] [--repo R] [--author A] [--accent green]
 STACK: nextjs | expo | mkdocs | fastapi | fastmcp | docs   (docs = README/AGENTS/CLAUDE/CONTRIBUTING/CHANGELOG/LICENSE/PR template)"""
 import argparse
 import datetime
@@ -101,12 +101,13 @@ def stack(o, a):
     if s == "nextjs":
         for f in ("skeleton", "spinner", "action-button", "states", "theme-toggle"):
             o.put(f"components/{f}.tsx", src=T / "nextjs" / f"{f}.tsx")
-        o.put(f"{a.css_dir}/loading.tsx", src=T / "nextjs" / "loading.tsx")
-        layout = (T / "nextjs" / "layout.snippet.tsx").read_text().replace("./globals.css", "./house-style.css")
-        o.put(f"{a.css_dir}/layout.tsx", layout)
-        existing = o.dest / a.css_dir / "layout.tsx"
-        if f"{a.css_dir}/layout.tsx" in o.skipped and "house-style.css" not in existing.read_text():
-            o.notes.append(f'{a.css_dir}/layout.tsx exists: replace the globals.css import with "./house-style.css", wrap children in <ThemeProvider attribute="class" defaultTheme="system" enableSystem><main id="main">...</main></ThemeProvider>, add suppressHydrationWarning on <html> and a skip link (see templates/nextjs/layout.snippet.tsx)')
+        o.put(f"{a.app_dir}/loading.tsx", src=T / "nextjs" / "loading.tsx")
+        css_import = "./house-style.css" if a.css_dir == a.app_dir else f"../{a.css_dir}/house-style.css"
+        layout = (T / "nextjs" / "layout.snippet.tsx").read_text().replace("./globals.css", css_import)
+        o.put(f"{a.app_dir}/layout.tsx", layout)
+        existing = o.dest / a.app_dir / "layout.tsx"
+        if f"{a.app_dir}/layout.tsx" in o.skipped and "house-style.css" not in existing.read_text():
+            o.notes.append(f'{a.app_dir}/layout.tsx exists: replace the globals.css import with "{css_import}", wrap children in <ThemeProvider attribute="class" defaultTheme="system" enableSystem><main id="main">...</main></ThemeProvider>, add suppressHydrationWarning on <html> and a skip link (see templates/nextjs/layout.snippet.tsx)')
         tailwind_config(o, a, ("tailwind.config.ts", NEXT_CONFIG))
         o.notes.append("install: npm i lucide-react next-themes clsx tailwind-merge; npx shadcn@latest init && npx shadcn@latest add button (templates import @/components/ui/button and @/lib/utils)")
     elif s == "expo":
@@ -133,7 +134,8 @@ def main():
     p = argparse.ArgumentParser()
     p.add_argument("stack", choices=("nextjs", "expo", "mkdocs", "fastapi", "fastmcp", "docs"))
     p.add_argument("--dest", default=".")
-    p.add_argument("--css-dir", default="app")
+    p.add_argument("--css-dir", default="app", help="where house-style.css/.preset.js live (build.py --out)")
+    p.add_argument("--app-dir", default="app", help="Next.js app directory for layout.tsx/loading.tsx")
     p.add_argument("--accent", default=tokens.DEFAULT_ACCENT)
     p.add_argument("--author", default=None)
     p.add_argument("--name", default=None)

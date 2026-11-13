@@ -240,6 +240,14 @@ class Scaffold(unittest.TestCase):
             self.assertEqual((Path(d) / "tailwind.config.js").read_text(), "module.exports = {}")
             self.assertIn("add `presets:", out)
 
+    def test_css_dir_differs_from_app_dir(self):
+        with tempfile.TemporaryDirectory() as d:
+            self.run_sc(d, "nextjs", "--css-dir", "styles")
+            self.assertTrue((Path(d) / "app/layout.tsx").is_file())  # layout stays in app/
+            self.assertFalse((Path(d) / "styles/layout.tsx").exists())
+            self.assertIn('"../styles/house-style.css"', (Path(d) / "app/layout.tsx").read_text())
+            self.assertIn("./styles/house-style.preset.js", (Path(d) / "tailwind.config.ts").read_text())
+
     def test_existing_layout_gets_a_note(self):
         with tempfile.TemporaryDirectory() as d:
             (Path(d) / "app").mkdir()

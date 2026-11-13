@@ -8,10 +8,14 @@ It stays active on every decision Claude makes in an opted-in project and steers
 /plugin marketplace add igormcsouza/house-style
 /plugin install house-style@house-style
 ```
-Then, inside a project: `/house-style:init`.
+1. **Turn on auto-update (once):** `/plugin` > Marketplaces > house-style > **Enable auto-update**. It is off by default for third-party marketplaces; without it you never receive new rules.
+2. Inside a project: `/house-style:init`.
 
 ### Updates
-There is no pinned `version`: every merge to `main` is a new plugin version (commit SHA). Turn on **Enable auto-update** under `/plugin` > Marketplaces > house-style (off by default for third-party marketplaces); it applies after your first message plus up to ~10 minutes, then run `/reload-plugins`. Manual: `/plugin marketplace update house-style` then `claude plugin update house-style@house-style`. To stay on a milestone: `/plugin marketplace add igormcsouza/house-style#v0.1.0`.
+There is no pinned `version`: every merge to `main` is a new plugin version (its commit SHA), so with auto-update on, changes arrive by themselves after your first message plus up to ~10 minutes; run `/reload-plugins` to apply them in the running session.
+- **Manual update:** `/plugin marketplace update house-style`, then `claude plugin update house-style@house-style`. Both are needed: a plain `plugin update` does not refresh the catalog first and reports "already at the latest".
+- **Stay on a milestone:** `/plugin marketplace add igormcsouza/house-style#v0.1.0`.
+- **Developing the plugin:** add your clone as the marketplace (`/plugin marketplace add ~/Projects/house-style`) to load it in place (edits apply at the next session or `/reload-plugins`), or run `claude --plugin-dir ~/Projects/house-style` for one session.
 
 ## How it stays alive
 | Layer | What it does |

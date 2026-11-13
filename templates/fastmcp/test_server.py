@@ -6,7 +6,7 @@ from fastmcp import Client
 
 os.environ.update(MCP_BASE_URL="https://mcp.example.com", OIDC_ISSUER="https://idp.example.com",
                   OIDC_JWKS_URI="https://idp.example.com/.well-known/jwks.json", OIDC_AUDIENCE="my-mcp")
-from server import build, build_auth  # noqa: E402
+from server import build, build_auth
 
 
 def test_tool_in_memory():

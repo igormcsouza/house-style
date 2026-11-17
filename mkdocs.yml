@@ -1,0 +1,61 @@
+site_name: house-style
+site_description: One UI/UX, accessibility, backend, MCP+OAuth, docs and release standard for every project, as a Claude Code plugin.
+site_author: Igor Souza
+site_url: https://igormcsouza.github.io/house-style/
+repo_name: igormcsouza/house-style
+repo_url: https://github.com/igormcsouza/house-style
+edit_uri: edit/main/docs/
+copyright: Copyright &copy; 2026 Igor Souza
+theme:
+  name: material
+  logo: assets/icon.svg
+  favicon: assets/icon.svg
+  features:
+    - navigation.tabs
+    - navigation.sections
+    - navigation.top
+    - search.highlight
+    - content.code.copy
+    - navigation.indexes
+    - content.action.edit
+  palette:
+    - scheme: default
+      primary: "green"   # Material name: green | blue | red | deep purple | amber | teal
+      accent: "green"
+      toggle: { icon: material/brightness-7, name: Switch to dark mode }
+    - scheme: slate
+      primary: "green"
+      accent: "green"
+      toggle: { icon: material/brightness-4, name: Switch to light mode }
+markdown_extensions:
+  - admonition
+  - pymdownx.highlight: { anchor_linenums: true }
+  - pymdownx.superfences
+  - toc: { permalink: true }
+plugins:
+  - search
+nav:
+  - Home: index.md
+  - Getting started:
+      - Install: getting-started/install.md
+  - Guide:
+      - guide/index.md
+      - Init a project: guide/init.md
+      - Audit: guide/audit.md
+      - Release: guide/release.md
+      - How it stays active: guide/hooks.md
+  - Standard:
+      - Core (injected every session): standard/core.md
+      - UI: standard/ui.md
+      - Accessibility: standard/a11y.md
+      - Loading and states: standard/loading.md
+      - Backend: standard/backend.md
+      - MCP and OAuth: standard/mcp-oauth.md
+      - Python: standard/python.md
+      - Testing: standard/testing.md
+      - Infrastructure and ports: standard/infra.md
+      - Security: standard/security.md
+      - Documentation: standard/docs.md
+      - Releasing: standard/releasing.md
+  - Project:
+      - Contributing: project/contributing.md

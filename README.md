@@ -47,3 +47,6 @@ Read `rules/`.
 ## Develop
 `python3 -m unittest discover -s tests -v` (stdlib only). Templates under `templates/fastmcp` and `templates/fastapi` have their own pytest suites (`uv sync && uv run pytest`).
 Add an accent: one line in `lib/tokens.py` `ACCENTS` (`python3 scripts/build.py --check` validates contrast).
+
+## Documentation
+https://igormcsouza.github.io/house-style/ (source in `docs/`; `docs/standard` is a symlink to `rules/`). Build: `uv run --group docs mkdocs build --strict`.
